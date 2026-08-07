@@ -487,6 +487,8 @@ func (w *WebSocketReporter) handleReceivedMessage(messageType int, message []byt
 
 // routeCommand 路由命令到对应的处理函数
 func (w *WebSocketReporter) routeCommand(cmd CommandMessage) {
+	// 配置热重载会清空 observer 注册表，处理命令前恢复
+	EnsureObserverRegistered()
 	jsonBytes, errs := json.Marshal(cmd)
 	if errs != nil {
 		fmt.Println("Error marshaling JSON:", errs)

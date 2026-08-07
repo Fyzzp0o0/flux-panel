@@ -52,13 +52,13 @@ public class FlowController extends BaseController {
 
     // 常量定义
     private static final String SUCCESS_RESPONSE = "ok";
-    private static final String DEFAULT_USER_TUNNEL_ID = "0";
+    // PG 适配：ID 统一使用 Long，原 DEFAULT_USER_TUNNEL_ID("0") 比较改为 0L
     private static final long BYTES_TO_GB = 1024L * 1024L * 1024L;
 
     // 用于同步相同用户和隧道的流量更新操作
-    private static final ConcurrentHashMap<String, Object> USER_LOCKS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, Object> TUNNEL_LOCKS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, Object> FORWARD_LOCKS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, Object> USER_LOCKS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, Object> TUNNEL_LOCKS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, Object> FORWARD_LOCKS = new ConcurrentHashMap<>();
 
     // 缓存加密器实例，避免重复创建
     private static final ConcurrentHashMap<String, AESCrypto> CRYPTO_CACHE = new ConcurrentHashMap<>();
@@ -221,9 +221,9 @@ public class FlowController extends BaseController {
      */
     private void processFlowData(FlowDto flowDataList) {
         String[] serviceIds = parseServiceName(flowDataList.getN());
-        String forwardId = serviceIds[0];
-        String userId = serviceIds[1];
-        String userTunnelId = serviceIds[2];
+        Long forwardId = Long.parseLong(serviceIds[0]);
+        Long userId = Long.parseLong(serviceIds[1]);
+        Long userTunnelId = Long.parseLong(serviceIds[2]);
 
         Forward forward = forwardService.getById(forwardId);
         if (forward != null){
@@ -246,14 +246,14 @@ public class FlowController extends BaseController {
 
         // 7. 检查和服务暂停操作
         String name = buildServiceName(forwardId, userId, userTunnelId);
-        if (!Objects.equals(userTunnelId, DEFAULT_USER_TUNNEL_ID)) { // 非管理员的转发需要检测流量限制
+        if (!Objects.equals(userTunnelId, 0L)) { // 非管理员的转发需要检测流量限制
             checkUserRelatedLimits(userId, name);
             checkUserTunnelRelatedLimits(userTunnelId, name, userId);
         }
 
     }
 
-    private void checkUserRelatedLimits(String userId, String name) {
+    private void checkUserRelatedLimits(Long userId, String name) {
 
         // 重新查询用户以获取最新的流量数据
         User updatedUser = userService.getById(userId);
@@ -279,12 +279,12 @@ public class FlowController extends BaseController {
         }
     }
 
-    public void pauseAllUserServices(String userId, String name) {
+    public void pauseAllUserServices(Long userId, String name) {
         List<Forward> forwardList = forwardService.list(new QueryWrapper<Forward>().eq("user_id", userId));
         pauseService(forwardList, name);
     }
 
-    public void checkUserTunnelRelatedLimits(String userTunnelId, String name, String userId) {
+    public void checkUserTunnelRelatedLimits(Long userTunnelId, String name, Long userId) {
 
         UserTunnel userTunnel = userTunnelService.getById(userTunnelId);
         if (userTunnel == null) return;
@@ -306,7 +306,7 @@ public class FlowController extends BaseController {
 
     }
 
-    private void pauseSpecificForward(Integer tunnelId, String name, String userId) {
+    private void pauseSpecificForward(Integer tunnelId, String name, Long userId) {
         List<Forward> forwardList = forwardService.list(new QueryWrapper<Forward>().eq("tunnel_id", tunnelId).eq("user_id", userId));
         pauseService(forwardList, name);
     }
@@ -322,7 +322,7 @@ public class FlowController extends BaseController {
         }
     }
 
-    private void updateForwardFlow(String forwardId, FlowDto flowStats) {
+    private void updateForwardFlow(Long forwardId, FlowDto flowStats) {
         // 对相同转发的流量更新进行同步，避免并发覆盖
         synchronized (getForwardLock(forwardId)) {
             UpdateWrapper<Forward> updateWrapper = new UpdateWrapper<>();
@@ -334,7 +334,7 @@ public class FlowController extends BaseController {
         }
     }
 
-    private void updateUserFlow(String userId, FlowDto flowStats) {
+    private void updateUserFlow(Long userId, FlowDto flowStats) {
         // 对相同用户的流量更新进行同步，避免并发覆盖
         synchronized (getUserLock(userId)) {
             UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
@@ -347,8 +347,8 @@ public class FlowController extends BaseController {
         }
     }
 
-    private void updateUserTunnelFlow(String userTunnelId, FlowDto flowStats) {
-        if (Objects.equals(userTunnelId, DEFAULT_USER_TUNNEL_ID)) {
+    private void updateUserTunnelFlow(Long userTunnelId, FlowDto flowStats) {
+        if (Objects.equals(userTunnelId, 0L)) {
             return; // 默认隧道不需要更新，返回成功
         }
 
@@ -362,15 +362,15 @@ public class FlowController extends BaseController {
         }
     }
 
-    private Object getUserLock(String userId) {
+    private Object getUserLock(Long userId) {
         return USER_LOCKS.computeIfAbsent(userId, k -> new Object());
     }
 
-    private Object getTunnelLock(String userTunnelId) {
+    private Object getTunnelLock(Long userTunnelId) {
         return TUNNEL_LOCKS.computeIfAbsent(userTunnelId, k -> new Object());
     }
 
-    private Object getForwardLock(String forwardId) {
+    private Object getForwardLock(Long forwardId) {
         return FORWARD_LOCKS.computeIfAbsent(forwardId, k -> new Object());
     }
 
@@ -383,7 +383,7 @@ public class FlowController extends BaseController {
         return serviceName.split("_");
     }
 
-    private String buildServiceName(String forwardId, String userId, String userTunnelId) {
+    private String buildServiceName(Long forwardId, Long userId, Long userTunnelId) {
         return forwardId + "_" + userId + "_" + userTunnelId;
     }
 }

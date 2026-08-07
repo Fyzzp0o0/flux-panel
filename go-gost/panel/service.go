@@ -55,6 +55,26 @@ func createServices(req createServicesRequest) error {
 		}
 		serviceConfig.Name = name
 
+		// 自动注入面板流量统计 observer（service 级收 StatsEvent + handler 级 enableStats）
+		if serviceConfig.Observer == "" {
+			serviceConfig.Observer = panelObserverName
+		}
+		if serviceConfig.Handler != nil {
+			if serviceConfig.Handler.Observer == "" {
+				serviceConfig.Handler.Observer = panelObserverName
+			}
+		}
+		// enableStats/observePeriod 为 service 级 metadata（v3 解析器读取 cfg.Metadata）
+		if serviceConfig.Metadata == nil {
+			serviceConfig.Metadata = make(map[string]any)
+		}
+		if _, ok := serviceConfig.Metadata["enableStats"]; !ok {
+			serviceConfig.Metadata["enableStats"] = true
+		}
+		if _, ok := serviceConfig.Metadata["observePeriod"]; !ok {
+			serviceConfig.Metadata["observePeriod"] = "5s"
+		}
+
 		err := config.OnUpdate(func(c *config.Config) error {
 			// 查重（在锁内检查真实 global）
 			for _, exist := range c.Services {
@@ -85,6 +105,26 @@ func updateServices(req updateServicesRequest) error {
 			return errors.New("service name is required")
 		}
 		serviceConfig.Name = name
+
+		// 自动注入面板流量统计 observer（service 级收 StatsEvent + handler 级 enableStats）
+		if serviceConfig.Observer == "" {
+			serviceConfig.Observer = panelObserverName
+		}
+		if serviceConfig.Handler != nil {
+			if serviceConfig.Handler.Observer == "" {
+				serviceConfig.Handler.Observer = panelObserverName
+			}
+		}
+		// enableStats/observePeriod 为 service 级 metadata（v3 解析器读取 cfg.Metadata）
+		if serviceConfig.Metadata == nil {
+			serviceConfig.Metadata = make(map[string]any)
+		}
+		if _, ok := serviceConfig.Metadata["enableStats"]; !ok {
+			serviceConfig.Metadata["enableStats"] = true
+		}
+		if _, ok := serviceConfig.Metadata["observePeriod"]; !ok {
+			serviceConfig.Metadata["observePeriod"] = "5s"
+		}
 
 		err := config.OnUpdate(func(c *config.Config) error {
 			for i := range c.Services {

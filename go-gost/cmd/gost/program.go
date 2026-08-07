@@ -71,6 +71,9 @@ func (p *program) Start() error {
 
 	config.Set(cfg)
 
+	// 面板扩展：loader.Load 会清空 observer 注册表，加载前先恢复
+	panel.EnsureObserverRegistered()
+
 	if err := loader.Load(cfg); err != nil {
 		return err
 	}
@@ -224,6 +227,9 @@ func (p *program) reload(ctx context.Context) {
 }
 
 func (p *program) reloadConfig() error {
+	// 面板扩展：loader.Load 会清空 observer 注册表，加载前先恢复
+	panel.EnsureObserverRegistered()
+
 	cfg, err := parser.Parse()
 	if err != nil {
 		return err

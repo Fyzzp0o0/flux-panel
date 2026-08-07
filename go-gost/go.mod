@@ -135,3 +135,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gvisor.dev/gvisor v0.0.0-20250523182742-eede7a881b20 // indirect
 )
+replace github.com/go-gost/x => ./x

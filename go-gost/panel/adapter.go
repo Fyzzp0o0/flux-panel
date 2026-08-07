@@ -14,6 +14,8 @@ func StartPanelServices() {
 	if panelCfg == nil {
 		return
 	}
+	// loader.Load 会清空 observer 注册表，这里恢复面板 observer
+	EnsureObserverRegistered()
 	// HTTP 流量上报（与 v0.x 行为一致）
 	SetHTTPReportURL(panelCfg.Addr, panelCfg.Secret)
 	// WebSocket 实时监控上报（内置断线重连）
