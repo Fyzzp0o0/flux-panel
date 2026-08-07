@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { Logo } from '@/components/icons';
 import { updatePassword } from '@/api';
 import { safeLogout } from '@/utils/logout';
+import bgImage from "@/images/bg.jpg";
 
 interface MenuItem {
   path: string;
@@ -241,7 +242,17 @@ export default function AdminLayout({
   );
 
   return (
-          <div className={`flex ${isMobile ? 'min-h-screen' : 'h-screen'} bg-gray-100 dark:bg-black`}>
+          <div
+            className={`relative flex ${isMobile ? 'min-h-screen' : 'h-screen'} bg-gray-100 dark:bg-black`}
+            style={{
+              backgroundImage: `url(${bgImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundAttachment: 'fixed',
+            }}
+          >
+            {/* 背景遮罩，保证内容可读性 */}
+            <div className="absolute inset-0 bg-white/70 dark:bg-black/60" />
       {/* 移动端遮罩层 */}
       {isMobile && mobileMenuVisible && (
         <div 

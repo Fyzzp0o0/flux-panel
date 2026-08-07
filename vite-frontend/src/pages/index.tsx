@@ -347,8 +347,35 @@ export default function IndexPage() {
 
   return (
     <DefaultLayout>
-      <section className="flex flex-col items-center justify-center gap-4 py-4 sm:py-8 md:py-10 pb-20 min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-200px)]">
-        <div className="w-full max-w-md px-4 sm:px-0">
+      <section className="flex items-center justify-center py-6 sm:py-10 md:py-14 px-4 min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-200px)]">
+        <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 md:gap-14 items-center">
+          {/* 左侧介绍区（桌面端显示，移动端隐藏） */}
+          <div className="hidden md:flex flex-col gap-5 p-8 rounded-2xl bg-white/60 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl">
+            <h1 className="text-3xl font-bold text-foreground">高性能流量转发面板</h1>
+            <p className="text-default-600 dark:text-default-400 leading-relaxed">
+              基于 go-gost 构建的流量转发管理平台，为 TCP / UDP 业务提供稳定、高效的转发服务，支持多节点统一管理。
+            </p>
+            <ul className="space-y-3 text-sm text-default-700 dark:text-default-300">
+              <li className="flex items-center gap-2">
+                <span className="text-primary font-bold">✔</span> TCP / UDP 协议转发
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-primary font-bold">✔</span> 端口转发与隧道转发两种模式
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-primary font-bold">✔</span> 用户级配额管理与限速控制
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-primary font-bold">✔</span> 支持单向 / 双向流量计费
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-primary font-bold">✔</span> 实时流量统计与节点状态监控
+              </li>
+            </ul>
+          </div>
+
+          {/* 右侧登录/注册卡片 */}
+          <div className="w-full max-w-md mx-auto">
           <Card className="w-full">
             <CardHeader className="pb-0 pt-6 px-6 flex-col items-center">
               <h1 className={title({ size: "sm" })}>{mode === 'login' ? '登陆' : '注册'}</h1>
@@ -463,11 +490,8 @@ export default function IndexPage() {
               </div>
             </CardBody>
           </Card>
+          </div>
         </div>
-
-
-
-   
 
         {/* 验证码弹层 */}
         {showCaptcha && (
