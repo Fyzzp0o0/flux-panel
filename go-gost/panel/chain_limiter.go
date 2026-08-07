@@ -1,8 +1,9 @@
 package panel
 
 // ============================================================
-// 面板 chain/limiter 管理（v3 适配版，策略与 service.go 一致：
-// 改内存配置 → 写 gost.json → SIGHUP 热重载）
+// 面板 chain/limiter 管理（v3 适配版 v2）
+// 策略与 service.go 一致：config.OnUpdate 修改全局本体 →
+// 写 gost.json → SIGHUP 热重载
 // ============================================================
 
 import (
@@ -21,14 +22,19 @@ func createChain(req createChainRequest) error {
 	}
 	req.Data.Name = name
 
-	cfg := config.Global()
-	for _, exist := range cfg.Chains {
-		if exist.Name == name {
-			return errors.New("chain " + name + " already exists")
+	err := config.OnUpdate(func(c *config.Config) error {
+		for _, exist := range c.Chains {
+			if exist.Name == name {
+				return errors.New("chain " + name + " already exists")
+			}
 		}
+		sc := req.Data
+		c.Chains = append(c.Chains, &sc)
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	sc := req.Data
-	cfg.Chains = append(cfg.Chains, &sc)
 
 	return saveAndReload()
 }
@@ -37,34 +43,46 @@ func updateChain(req updateChainRequest) error {
 	name := strings.TrimSpace(req.Chain)
 	req.Data.Name = name
 
-	cfg := config.Global()
-	for i := range cfg.Chains {
-		if cfg.Chains[i].Name == name {
-			sc := req.Data
-			cfg.Chains[i] = &sc
-			return saveAndReload()
+	err := config.OnUpdate(func(c *config.Config) error {
+		for i := range c.Chains {
+			if c.Chains[i].Name == name {
+				sc := req.Data
+				c.Chains[i] = &sc
+				return nil
+			}
 		}
+		return errors.New("chain " + name + " not found")
+	})
+	if err != nil {
+		return err
 	}
-	return errors.New("chain " + name + " not found")
+
+	return saveAndReload()
 }
 
 func deleteChain(req deleteChainRequest) error {
 	name := strings.TrimSpace(req.Chain)
 
-	cfg := config.Global()
-	newChains := cfg.Chains[:0]
-	found := false
-	for _, c := range cfg.Chains {
-		if c.Name == name {
-			found = true
-			continue
+	err := config.OnUpdate(func(c *config.Config) error {
+		newChains := c.Chains[:0]
+		found := false
+		for _, ch := range c.Chains {
+			if ch.Name == name {
+				found = true
+				continue
+			}
+			newChains = append(newChains, ch)
 		}
-		newChains = append(newChains, c)
+		c.Chains = newChains
+		if !found {
+			return errors.New("chain " + name + " not found")
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	cfg.Chains = newChains
-	if !found {
-		return errors.New("chain " + name + " not found")
-	}
+
 	return saveAndReload()
 }
 
@@ -90,14 +108,19 @@ func createLimiter(req createLimiterRequest) error {
 	}
 	req.Data.Name = name
 
-	cfg := config.Global()
-	for _, exist := range cfg.Limiters {
-		if exist.Name == name {
-			return errors.New("limiter " + name + " already exists")
+	err := config.OnUpdate(func(c *config.Config) error {
+		for _, exist := range c.Limiters {
+			if exist.Name == name {
+				return errors.New("limiter " + name + " already exists")
+			}
 		}
+		sc := req.Data
+		c.Limiters = append(c.Limiters, &sc)
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	sc := req.Data
-	cfg.Limiters = append(cfg.Limiters, &sc)
 
 	return saveAndReload()
 }
@@ -106,34 +129,46 @@ func updateLimiter(req updateLimiterRequest) error {
 	name := strings.TrimSpace(req.Limiter)
 	req.Data.Name = name
 
-	cfg := config.Global()
-	for i := range cfg.Limiters {
-		if cfg.Limiters[i].Name == name {
-			sc := req.Data
-			cfg.Limiters[i] = &sc
-			return saveAndReload()
+	err := config.OnUpdate(func(c *config.Config) error {
+		for i := range c.Limiters {
+			if c.Limiters[i].Name == name {
+				sc := req.Data
+				c.Limiters[i] = &sc
+				return nil
+			}
 		}
+		return errors.New("limiter " + name + " not found")
+	})
+	if err != nil {
+		return err
 	}
-	return errors.New("limiter " + name + " not found")
+
+	return saveAndReload()
 }
 
 func deleteLimiter(req deleteLimiterRequest) error {
 	name := strings.TrimSpace(req.Limiter)
 
-	cfg := config.Global()
-	newLimiters := cfg.Limiters[:0]
-	found := false
-	for _, l := range cfg.Limiters {
-		if l.Name == name {
-			found = true
-			continue
+	err := config.OnUpdate(func(c *config.Config) error {
+		newLimiters := c.Limiters[:0]
+		found := false
+		for _, l := range c.Limiters {
+			if l.Name == name {
+				found = true
+				continue
+			}
+			newLimiters = append(newLimiters, l)
 		}
-		newLimiters = append(newLimiters, l)
+		c.Limiters = newLimiters
+		if !found {
+			return errors.New("limiter " + name + " not found")
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	cfg.Limiters = newLimiters
-	if !found {
-		return errors.New("limiter " + name + " not found")
-	}
+
 	return saveAndReload()
 }
 

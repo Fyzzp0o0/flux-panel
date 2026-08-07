@@ -1,9 +1,11 @@
 package panel
 
 // ============================================================
-// 面板服务管理（v3 适配版）
-// 策略：面板指令 → 修改内存配置(config.Global) → 写 gost.json
-//      → 向自身发送 SIGHUP 触发 v3 原生热重载（program.go reload）
+// 面板服务管理（v3 适配版 v2）
+// 策略：面板指令 → 通过 config.OnUpdate 修改内存配置(全局本体)
+//      → 写 gost.json → 向自身发送 SIGHUP 触发 v3 原生热重载
+// 注意：config.Global() 返回浅拷贝，append/替换必须走 OnUpdate
+//      （在锁内直接操作 global 本体），否则修改不生效。
 // pause 的服务暂存 paused_services.json，resume 时恢复
 // ============================================================
 
@@ -46,7 +48,6 @@ func createServices(req createServicesRequest) error {
 		return errors.New("services list cannot be empty")
 	}
 
-	cfg := config.Global()
 	for _, serviceConfig := range req.Data {
 		name := strings.TrimSpace(serviceConfig.Name)
 		if name == "" {
@@ -54,14 +55,20 @@ func createServices(req createServicesRequest) error {
 		}
 		serviceConfig.Name = name
 
-		// 查重
-		for _, exist := range cfg.Services {
-			if exist.Name == name {
-				return errors.New("service " + name + " already exists")
+		err := config.OnUpdate(func(c *config.Config) error {
+			// 查重（在锁内检查真实 global）
+			for _, exist := range c.Services {
+				if exist.Name == name {
+					return errors.New("service " + name + " already exists")
+				}
 			}
+			sc := serviceConfig
+			c.Services = append(c.Services, &sc)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
-		sc := serviceConfig
-		cfg.Services = append(cfg.Services, &sc)
 	}
 
 	return saveAndReload()
@@ -72,7 +79,6 @@ func updateServices(req updateServicesRequest) error {
 		return errors.New("services list cannot be empty")
 	}
 
-	cfg := config.Global()
 	for _, serviceConfig := range req.Data {
 		name := strings.TrimSpace(serviceConfig.Name)
 		if name == "" {
@@ -80,17 +86,18 @@ func updateServices(req updateServicesRequest) error {
 		}
 		serviceConfig.Name = name
 
-		found := false
-		for i := range cfg.Services {
-			if cfg.Services[i].Name == name {
-				sc := serviceConfig
-				cfg.Services[i] = &sc
-				found = true
-				break
+		err := config.OnUpdate(func(c *config.Config) error {
+			for i := range c.Services {
+				if c.Services[i].Name == name {
+					sc := serviceConfig
+					c.Services[i] = &sc
+					return nil
+				}
 			}
-		}
-		if !found {
 			return errors.New("service " + name + " not found")
+		})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -102,25 +109,30 @@ func deleteServices(req deleteServicesRequest) error {
 		return errors.New("services list cannot be empty")
 	}
 
-	cfg := config.Global()
 	for _, serviceName := range req.Services {
 		name := strings.TrimSpace(serviceName)
 		if name == "" {
 			return errors.New("service name is required")
 		}
 
-		found := false
-		newServices := cfg.Services[:0]
-		for _, s := range cfg.Services {
-			if s.Name == name {
-				found = true
-				continue
+		err := config.OnUpdate(func(c *config.Config) error {
+			found := false
+			newServices := c.Services[:0]
+			for _, s := range c.Services {
+				if s.Name == name {
+					found = true
+					continue
+				}
+				newServices = append(newServices, s)
 			}
-			newServices = append(newServices, s)
-		}
-		cfg.Services = newServices
-		if !found {
-			return errors.New("service " + name + " not found")
+			c.Services = newServices
+			if !found {
+				return errors.New("service " + name + " not found")
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -132,31 +144,33 @@ func pauseServices(req pauseServicesRequest) error {
 		return errors.New("services list cannot be empty")
 	}
 
-	cfg := config.Global()
-
-	// 筛选需要暂停的服务
+	// 在锁内筛选并移除，同时收集暂停的服务
 	var paused []*config.ServiceConfig
-	newServices := cfg.Services[:0]
-	for _, s := range cfg.Services {
-		needPause := false
-		for _, serviceName := range req.Services {
-			if s.Name == strings.TrimSpace(serviceName) {
-				needPause = true
-				break
+	err := config.OnUpdate(func(c *config.Config) error {
+		newServices := c.Services[:0]
+		for _, s := range c.Services {
+			needPause := false
+			for _, serviceName := range req.Services {
+				if s.Name == strings.TrimSpace(serviceName) {
+					needPause = true
+					break
+				}
+			}
+			if needPause {
+				paused = append(paused, s)
+			} else {
+				newServices = append(newServices, s)
 			}
 		}
-		if needPause {
-			paused = append(paused, s)
-		} else {
-			newServices = append(newServices, s)
+		if len(paused) == 0 {
+			return errors.New("no matching services found")
 		}
+		c.Services = newServices
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-
-	if len(paused) == 0 {
-		return errors.New("no matching services found")
-	}
-
-	cfg.Services = newServices
 
 	// 合并已有暂停记录（去重）
 	existing := loadPausedServices()
@@ -183,27 +197,37 @@ func resumeServices(req resumeServicesRequest) error {
 		return errors.New("services list cannot be empty")
 	}
 
-	cfg := config.Global()
 	paused := loadPausedServices()
 
-	// 恢复指定服务
-	var remaining []*config.ServiceConfig
-	for _, p := range paused {
-		resume := false
-		for _, serviceName := range req.Services {
-			if p.Name == strings.TrimSpace(serviceName) {
-				resume = true
-				break
+	// 恢复指定服务（锁内追加）
+	err := config.OnUpdate(func(c *config.Config) error {
+		var remaining []*config.ServiceConfig
+		restored := 0
+		for _, p := range paused {
+			resume := false
+			for _, serviceName := range req.Services {
+				if p.Name == strings.TrimSpace(serviceName) {
+					resume = true
+					break
+				}
+			}
+			if resume {
+				c.Services = append(c.Services, p)
+				restored++
+			} else {
+				remaining = append(remaining, p)
 			}
 		}
-		if resume {
-			cfg.Services = append(cfg.Services, p)
-		} else {
-			remaining = append(remaining, p)
+		if restored == 0 {
+			return errors.New("no matching paused services found")
 		}
+		savePausedServices(remaining)
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
-	savePausedServices(remaining)
 	return saveAndReload()
 }
 
