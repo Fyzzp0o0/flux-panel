@@ -26,26 +26,39 @@
 
 ## 部署流程
 ---
-### Docker Compose部署
+### Systemd 部署（二开版，无 Docker）
+
+> 本二开版本已移除 Docker 相关文件（docker-compose、Dockerfile、Docker CI），
+> 面板端使用 systemd 管理服务，后端内置 SQLite 数据库（启动自动建表），无需 MySQL/MariaDB。
+> 已移除移动端（android-app / ios-app / flux.ipa）。
+
 #### 快速部署
-面板端(稳定版)：
-```bash
-curl -L https://raw.githubusercontent.com/bqlpfy/flux-panel/refs/heads/main/panel_install.sh -o panel_install.sh && chmod +x panel_install.sh && ./panel_install.sh
-```
-节点端(稳定版)：
-```bash
-curl -L https://raw.githubusercontent.com/bqlpfy/flux-panel/refs/heads/main/install.sh -o install.sh && chmod +x install.sh && ./install.sh
 
+面板端（自动安装 JDK21 / Node20 / Maven / nginx 并构建部署）：
+
+```bash
+curl -L https://raw.githubusercontent.com/<your-fork>/<branch>/install_panel_systemd.sh -o install_panel_systemd.sh && chmod +x install_panel_systemd.sh && ./install_panel_systemd.sh
 ```
 
-面板端(开发版)：
-```bash
-curl -L https://raw.githubusercontent.com/bqlpfy/flux-panel/refs/heads/beta/panel_install.sh -o panel_install.sh && chmod +x panel_install.sh && ./panel_install.sh
-```
-节点端(开发版)：
-```bash
-curl -L https://raw.githubusercontent.com/bqlpfy/flux-panel/refs/heads/beta/install.sh -o install.sh && chmod +x install.sh && ./install.sh
+节点端（systemd 管理 gost 服务）：
 
+```bash
+curl -L https://raw.githubusercontent.com/<your-fork>/<branch>/install.sh -o install.sh && chmod +x install.sh && ./install.sh
+```
+
+#### 手动部署（可选）
+
+```bash
+# 1. 构建后端（需 JDK 21 + Maven）
+cd springboot-backend && mvn clean package -DskipTests
+
+# 2. 构建前端（需 Node 20）
+cd vite-frontend && npm install --legacy-peer-deps && npm run build
+
+# 3. 部署
+#    后端: java -jar springboot-backend/target/admin.jar
+#          环境变量: DB_PATH(默认 deploy/data/gost.db) JWT_SECRET LOG_DIR
+#    前端: nginx 托管 vite-frontend/dist，反代 127.0.0.1:6365
 ```
 
 #### 默认管理员账号
@@ -88,5 +101,3 @@ curl -L https://raw.githubusercontent.com/bqlpfy/flux-panel/refs/heads/beta/inst
 | BNB(BEP20) | `0x755492c03728851bbf855daa28a1e089f9aca4d1`                          |
 | TRC20      | `TYh2L3xxXpuJhAcBWnt3yiiADiCSJLgUm7`                                  |
 | Aptos      | `0xf2f9fb14749457748506a8281628d556e8540d1eb586d202cd8b02b99d369ef8`  |
-
-[![Star History Chart](https://api.star-history.com/svg?repos=bqlpfy/flux-panel&type=Date)](https://www.star-history.com/#bqlpfy/flux-panel&Date)
