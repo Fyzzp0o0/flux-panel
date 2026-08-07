@@ -19,6 +19,8 @@ public interface UserService extends IService<User> {
 
     R createUser(UserDto userDto);
 
+    R register(RegisterDto registerDto);
+
     R getAllUsers();
 
     R updateUser(UserUpdateDto userUpdateDto);

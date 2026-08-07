@@ -16,6 +16,15 @@ export interface LoginResponse {
 
 export const login = (data: LoginData) => Network.post<LoginResponse>("/user/login", data);
 
+// 注册相关接口
+export interface RegisterData {
+  user: string;
+  pwd: string;
+  captchaId: string;
+}
+
+export const register = (data: RegisterData) => Network.post("/user/register", data);
+
 // 用户CRUD操作 - 全部使用POST请求
 export const createUser = (data: any) => Network.post("/user/create", data);
 export const getAllUsers = (pageData: any = {}) => Network.post("/user/list", pageData);

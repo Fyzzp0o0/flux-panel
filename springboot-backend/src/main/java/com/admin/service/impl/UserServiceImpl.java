@@ -63,6 +63,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     ImageCaptchaApplication application;
 
+    // 注册默认配额（可由 vite_config 表覆盖）
+    private static final long DEFAULT_REGISTER_FLOW = 107374182400L;      // 100GB
+    private static final int DEFAULT_REGISTER_NUM = 5;                    // 5 个转发
+    private static final int DEFAULT_REGISTER_EXP_DAYS = 30;              // 30 天有效期
+    private static final int DEFAULT_REGISTER_FLOW_RESET_DAYS = 30;       // 30 天流量重置周期
+
 
     @Override
     public R login(LoginDto loginDto) {
@@ -85,6 +91,70 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .put("role_id", user.getRoleId())
                 .put("requirePasswordChange", requirePasswordChange)
                 .build());
+    }
+
+    @Override
+    public R register(RegisterDto registerDto) {
+        // 1. 验证码校验（captcha_enabled=true 时强制，与登录逻辑一致）
+        ViteConfig captchaConfig = viteConfigService.getOne(new QueryWrapper<ViteConfig>().eq("name", "captcha_enabled"));
+        if (captchaConfig != null && Objects.equals(captchaConfig.getValue(), "true")) {
+            if (StringUtils.isBlank(registerDto.getCaptchaId())) return R.err("验证码校验失败");
+            boolean valid = ((SecondaryVerificationApplication) application).secondaryVerification(registerDto.getCaptchaId());
+            if (!valid) return R.err("验证码校验失败");
+        }
+
+        // 2. 用户名查重
+        int count = this.count(new QueryWrapper<User>().eq("user", registerDto.getUser()));
+        if (count > 0) return R.err("用户名已存在");
+
+        // 3. 读取默认配额（vite_config 可配置，未配置用代码默认值）
+        long now = System.currentTimeMillis();
+        long defaultFlow = parseConfigLong("register_default_flow", DEFAULT_REGISTER_FLOW);
+        int defaultNum = parseConfigInt("register_default_num", DEFAULT_REGISTER_NUM);
+        int expDays = parseConfigInt("register_default_exp_days", DEFAULT_REGISTER_EXP_DAYS);
+        int flowResetDays = parseConfigInt("register_default_flow_reset_days", DEFAULT_REGISTER_FLOW_RESET_DAYS);
+
+        // 4. 创建用户（普通用户 roleId=1）
+        User user = new User();
+        user.setUser(registerDto.getUser());
+        user.setPwd(Md5Util.md5(registerDto.getPwd()));
+        user.setRoleId(1);
+        user.setStatus(1);
+        user.setFlow(defaultFlow);
+        user.setNum(defaultNum);
+        user.setInFlow(0L);
+        user.setOutFlow(0L);
+        user.setExpTime(now + (long) expDays * 24 * 60 * 60 * 1000);
+        user.setFlowResetTime(now + (long) flowResetDays * 24 * 60 * 60 * 1000);
+        user.setCreatedTime(now);
+        user.setUpdatedTime(now);
+        this.save(user);
+        return R.ok();
+    }
+
+    private String getViteConfigValue(String name) {
+        ViteConfig config = viteConfigService.getOne(new QueryWrapper<ViteConfig>().eq("name", name));
+        return config == null ? null : config.getValue();
+    }
+
+    private long parseConfigLong(String name, long defaultValue) {
+        String value = getViteConfigValue(name);
+        if (StringUtils.isBlank(value)) return defaultValue;
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private int parseConfigInt(String name, int defaultValue) {
+        String value = getViteConfigValue(name);
+        if (StringUtils.isBlank(value)) return defaultValue;
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     @Override

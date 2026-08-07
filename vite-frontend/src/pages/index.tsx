@@ -9,7 +9,7 @@ import { isWebViewFunc } from '@/utils/panel';
 import { siteConfig } from '@/config/site';
 import { title } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
-import { login, LoginData, checkCaptcha } from "@/api";
+import { login, LoginData, checkCaptcha, register, RegisterData } from "@/api";
 import "@/utils/tac.css";
 import "@/utils/tac.min.js";
 import bgImage from "@/images/bg.jpg";
@@ -18,6 +18,13 @@ import bgImage from "@/images/bg.jpg";
 interface LoginForm {
   username: string;
   password: string;
+  captchaId: string;
+}
+
+interface RegisterForm {
+  user: string;
+  pwd: string;
+  confirmPwd: string;
   captchaId: string;
 }
 
@@ -42,13 +49,21 @@ interface CaptchaStyle {
 }
 
 export default function IndexPage() {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [form, setForm] = useState<LoginForm>({
     username: "",
     password: "",
     captchaId: "",
   });
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
+    user: "",
+    pwd: "",
+    confirmPwd: "",
+    captchaId: "",
+  });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
+  const [registerErrors, setRegisterErrors] = useState<Partial<RegisterForm>>({});
   const [showCaptcha, setShowCaptcha] = useState(false);
   const navigate = useNavigate();
   const tacInstanceRef = useRef<any>(null);
@@ -67,8 +82,8 @@ export default function IndexPage() {
   useEffect(() => {
     setIsWebView(isWebViewFunc());
   }, []);
-  // 验证表单
-  const validateForm = (): boolean => {
+  // 验证登录表单
+  const validateLoginForm = (): boolean => {
     const newErrors: Partial<LoginForm> = {};
 
     if (!form.username.trim()) {
@@ -86,12 +101,47 @@ export default function IndexPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // 验证注册表单
+  const validateRegisterForm = (): boolean => {
+    const newErrors: Partial<RegisterForm> = {};
+
+    if (!registerForm.user.trim()) {
+      newErrors.user = '请输入用户名';
+    } else if (registerForm.user.trim().length < 3 || registerForm.user.trim().length > 20) {
+      newErrors.user = '用户名长度需在3-20个字符之间';
+    }
+
+    if (!registerForm.pwd) {
+      newErrors.pwd = '请输入密码';
+    } else if (registerForm.pwd.length < 6 || registerForm.pwd.length > 32) {
+      newErrors.pwd = '密码长度需在6-32个字符之间';
+    }
+
+    if (!registerForm.confirmPwd) {
+      newErrors.confirmPwd = '请再次输入密码';
+    } else if (registerForm.confirmPwd !== registerForm.pwd) {
+      newErrors.confirmPwd = '两次输入的密码不一致';
+    }
+
+    setRegisterErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // 处理输入变化
   const handleInputChange = (field: keyof LoginForm, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     // 清除该字段的错误
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  // 处理注册输入变化
+  const handleRegisterInputChange = (field: keyof RegisterForm, value: string) => {
+    setRegisterForm(prev => ({ ...prev, [field]: value }));
+    // 清除该字段的错误
+    if (registerErrors[field]) {
+      setRegisterErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -116,13 +166,21 @@ export default function IndexPage() {
         validCaptchaUrl: `${baseURL}captcha/verify`, 
         bindEl: "#captcha-container",
         validSuccess: (res: any, _: any, tac: any) => {
-          
+          const captchaId = res.data.validToken;
 
-          form.captchaId = res.data.validToken
+          if (mode === 'login') {
+            form.captchaId = captchaId;
+          } else {
+            registerForm.captchaId = captchaId;
+          }
 
           setShowCaptcha(false);
           tac.destroyWindow();
-          performLogin();
+          if (mode === 'login') {
+            performLogin();
+          } else {
+            performRegister();
+          }
         },
         validFail: (_: any, _captcha: any, tac: any) => {
           tac.reloadCaptcha();
@@ -210,8 +268,39 @@ export default function IndexPage() {
     }
   };
 
-  const handleLogin = async () => {
-    if (!validateForm()) return;
+  // 执行注册请求
+  const performRegister = async () => {
+    try {
+      const registerData: RegisterData = {
+        user: registerForm.user.trim(),
+        pwd: registerForm.pwd,
+        captchaId: registerForm.captchaId,
+      };
+
+      const response = await register(registerData);
+
+      if (response.code !== 0) {
+        toast.error(response.msg || "注册失败");
+        return;
+      }
+
+      // 注册成功：切回登录并回填用户名
+      toast.success('注册成功，请登录');
+      setMode('login');
+      setForm(prev => ({ ...prev, username: registerForm.user.trim() }));
+      setRegisterForm({ user: "", pwd: "", confirmPwd: "", captchaId: "" });
+
+    } catch (error) {
+      console.error('注册错误:', error);
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const valid = mode === 'login' ? validateLoginForm() : validateRegisterForm();
+    if (!valid) return;
 
     setLoading(true);
 
@@ -227,8 +316,12 @@ export default function IndexPage() {
 
       // 根据返回值决定是否显示验证码
       if (checkResponse.data === 0) {
-        // 不需要验证码，直接登录
-        await performLogin();
+        // 不需要验证码，直接提交
+        if (mode === 'login') {
+          await performLogin();
+        } else {
+          await performRegister();
+        }
       } else {
         // 需要验证码，显示验证码弹层
         setShowCaptcha(true);
@@ -247,8 +340,16 @@ export default function IndexPage() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading) {
-      handleLogin();
+      handleSubmit();
     }
+  };
+
+  // 切换模式时清理错误
+  const handleModeChange = (key: React.Key) => {
+    const newMode = key as 'login' | 'register';
+    setMode(newMode);
+    setErrors({});
+    setRegisterErrors({});
   };
 
   return (
@@ -257,45 +358,114 @@ export default function IndexPage() {
         <div className="w-full max-w-md px-4 sm:px-0">
           <Card className="w-full">
             <CardHeader className="pb-0 pt-6 px-6 flex-col items-center">
-              <h1 className={title({ size: "sm" })}>登陆</h1>
-              <p className="text-small text-default-500 mt-2">请输入您的账号信息</p>
+              <h1 className={title({ size: "sm" })}>{mode === 'login' ? '登陆' : '注册'}</h1>
+              <p className="text-small text-default-500 mt-2">{mode === 'login' ? '请输入您的账号信息' : '注册新账号'}</p>
             </CardHeader>
             <CardBody className="px-6 py-6">
               <div className="flex flex-col gap-4">
-                <Input
-                  label="用户名"
-                  placeholder="请输入用户名"
-                  value={form.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  variant="bordered"
-                  isDisabled={loading}
-                  isInvalid={!!errors.username}
-                  errorMessage={errors.username}
-                />
-                
-                <Input
-                  label="密码"
-                  placeholder="请输入密码"
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  variant="bordered"
-                  isDisabled={loading}
-                  isInvalid={!!errors.password}
-                />
+                <div className="flex gap-2">
+                  <Button
+                    variant={mode === 'login' ? 'solid' : 'light'}
+                    color="primary"
+                    size="md"
+                    fullWidth
+                    disabled={loading}
+                    onPress={() => handleModeChange('login')}
+                  >
+                    登录
+                  </Button>
+                  <Button
+                    variant={mode === 'register' ? 'solid' : 'light'}
+                    color="primary"
+                    size="md"
+                    fullWidth
+                    disabled={loading}
+                    onPress={() => handleModeChange('register')}
+                  >
+                    注册
+                  </Button>
+                </div>
+
+                {mode === 'login' && (
+                  <>
+                    <Input
+                      label="用户名"
+                      placeholder="请输入用户名"
+                      value={form.username}
+                      onChange={(e) => handleInputChange('username', e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      variant="bordered"
+                      isDisabled={loading}
+                      isInvalid={!!errors.username}
+                      errorMessage={errors.username}
+                    />
+                    
+                    <Input
+                      label="密码"
+                      placeholder="请输入密码"
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      variant="bordered"
+                      isDisabled={loading}
+                      isInvalid={!!errors.password}
+                    />
+                  </>
+                )}
+
+                {mode === 'register' && (
+                  <>
+                    <Input
+                      label="用户名"
+                      placeholder="3-20个字符"
+                      value={registerForm.user}
+                      onChange={(e) => handleRegisterInputChange('user', e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      variant="bordered"
+                      isDisabled={loading}
+                      isInvalid={!!registerErrors.user}
+                      errorMessage={registerErrors.user}
+                    />
+                    
+                    <Input
+                      label="密码"
+                      placeholder="6-32个字符"
+                      type="password"
+                      value={registerForm.pwd}
+                      onChange={(e) => handleRegisterInputChange('pwd', e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      variant="bordered"
+                      isDisabled={loading}
+                      isInvalid={!!registerErrors.pwd}
+                      errorMessage={registerErrors.pwd}
+                    />
+
+                    <Input
+                      label="确认密码"
+                      placeholder="请再次输入密码"
+                      type="password"
+                      value={registerForm.confirmPwd}
+                      onChange={(e) => handleRegisterInputChange('confirmPwd', e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      variant="bordered"
+                      isDisabled={loading}
+                      isInvalid={!!registerErrors.confirmPwd}
+                      errorMessage={registerErrors.confirmPwd}
+                    />
+                  </>
+                )}
 
                 
                 <Button
                   color="primary"
                   size="lg"
-                  onClick={handleLogin}
+                  onClick={handleSubmit}
                   isLoading={loading}
                   disabled={loading}
                   className="mt-2"
                 >
-                  {loading ? (showCaptcha ? "验证中..." : "登录中...") : "登录"}
+                  {loading ? (showCaptcha ? "验证中..." : mode === 'login' ? "登录中..." : "注册中...") : (mode === 'login' ? "登录" : "注册")}
                 </Button>
               </div>
             </CardBody>
