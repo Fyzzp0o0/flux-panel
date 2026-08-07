@@ -73,7 +73,6 @@ export const Navbar = () => {
               href="/"
             >
               <Logo size={24} />
-              <p className="font-bold text-inherit truncate">{appName}</p>
             </Link>
           </NavbarBrand>
         </NavbarContent>

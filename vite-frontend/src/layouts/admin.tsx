@@ -9,7 +9,6 @@ import { toast } from 'react-hot-toast';
 import { Logo } from '@/components/icons';
 import { updatePassword } from '@/api';
 import { safeLogout } from '@/utils/logout';
-import { siteConfig } from '@/config/site';
 
 interface MenuItem {
   path: string;
@@ -269,10 +268,6 @@ export default function AdminLayout({
          <div className="px-3 py-3 h-14 flex items-center">
            <div className="flex items-center gap-2 w-full">
              <Logo size={24} />
-             <div className="flex-1 min-w-0">
-               <h1 className="text-sm font-bold text-foreground overflow-hidden whitespace-nowrap">{siteConfig.name}</h1>
-               <p className="text-xs text-default-500">v{siteConfig.version}</p>
-             </div>
            </div>
          </div>
 
