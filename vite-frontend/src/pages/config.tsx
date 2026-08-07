@@ -98,6 +98,34 @@ const CONFIG_ITEMS: ConfigItem[] = [
         description: '拖动滑块完成图片拼接' 
       }
     ]
+  },
+  {
+    key: 'register_default_flow',
+    label: '注册默认流量',
+    placeholder: '请输入流量（字节）',
+    description: '新注册用户的默认流量配额，单位字节（1GB=1073741824），留空使用代码默认值 100GB',
+    type: 'input'
+  },
+  {
+    key: 'register_default_num',
+    label: '注册默认转发数',
+    placeholder: '请输入转发数量',
+    description: '新注册用户的默认转发（隧道）数量，留空使用代码默认值 5',
+    type: 'input'
+  },
+  {
+    key: 'register_default_exp_days',
+    label: '注册默认有效期（天）',
+    placeholder: '请输入天数',
+    description: '新注册账号的有效期天数，留空使用代码默认值 30 天',
+    type: 'input'
+  },
+  {
+    key: 'register_default_flow_reset_days',
+    label: '流量重置周期（天）',
+    placeholder: '请输入天数',
+    description: '新注册账号的流量重置周期天数，留空使用代码默认值 30 天',
+    type: 'input'
   }
 ];
 
@@ -105,7 +133,7 @@ const CONFIG_ITEMS: ConfigItem[] = [
 const getInitialConfigs = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
   
-  const configKeys = ['app_name', 'captcha_enabled', 'captcha_type', 'ip'];
+  const configKeys = ['app_name', 'captcha_enabled', 'captcha_type', 'ip', 'register_default_flow', 'register_default_num', 'register_default_exp_days', 'register_default_flow_reset_days'];
   const initialConfigs: Record<string, string> = {};
   
   try {
