@@ -1,7 +1,9 @@
 spring:
   datasource:
-    driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:${DB_PATH:/app/data/gost.db}
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     hikari:
       max-lifetime: 500000
       connection-timeout: 30000
@@ -13,7 +15,7 @@ spring:
   sql:
     init:
       mode: always
-      platform: sqlite
+      platform: postgresql
       continue-on-error: false
   servlet:
     multipart:

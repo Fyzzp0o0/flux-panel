@@ -17,7 +17,7 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 配置分页插件，指定数据库类型为 SQLite
-        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.SQLITE);
+        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.POSTGRE_SQL);
         interceptor.addInnerInterceptor(paginationInterceptor); // 分页插件
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor()); // 防止全表更新插件
         return interceptor;

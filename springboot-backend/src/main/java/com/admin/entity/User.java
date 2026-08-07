@@ -2,6 +2,8 @@ package com.admin.entity;
 
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,6 +18,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName("\"user\"")
 public class User extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
@@ -41,6 +44,7 @@ public class User extends BaseEntity {
      */
     private Integer status;
 
+    @TableField("\"user\"")
     private String user;
 
     private String pwd;

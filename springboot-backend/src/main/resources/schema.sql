@@ -2,125 +2,125 @@
 -- This will be executed automatically on startup if tables don't exist
 
 CREATE TABLE IF NOT EXISTS forward (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
   user_name VARCHAR(100) NOT NULL,
   name VARCHAR(100) NOT NULL,
-  tunnel_id INTEGER NOT NULL,
+  tunnel_id BIGINT NOT NULL,
   remote_addr TEXT NOT NULL,
   strategy VARCHAR(100) NOT NULL DEFAULT 'fifo',
-  in_flow INTEGER NOT NULL DEFAULT 0,
-  out_flow INTEGER NOT NULL DEFAULT 0,
-  created_time INTEGER NOT NULL,
-  updated_time INTEGER NOT NULL,
-  status INTEGER NOT NULL,
-  inx INTEGER NOT NULL DEFAULT 0
+  in_flow BIGINT NOT NULL DEFAULT 0,
+  out_flow BIGINT NOT NULL DEFAULT 0,
+  created_time BIGINT NOT NULL,
+  updated_time BIGINT NOT NULL,
+  status BIGINT NOT NULL,
+  inx BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS forward_port (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  forward_id INTEGER NOT NULL,
-  node_id INTEGER NOT NULL,
-  port INTEGER NOT NULL
+  id BIGSERIAL PRIMARY KEY,
+  forward_id BIGINT NOT NULL,
+  node_id BIGINT NOT NULL,
+  port BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS node (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   secret VARCHAR(100) NOT NULL,
   server_ip VARCHAR(100) NOT NULL,
   port TEXT NOT NULL,
   interface_name VARCHAR(200),
   version VARCHAR(100),
-  http INTEGER NOT NULL DEFAULT 0,
-  tls INTEGER NOT NULL DEFAULT 0,
-  socks INTEGER NOT NULL DEFAULT 0,
-  created_time INTEGER NOT NULL,
-  updated_time INTEGER,
-  status INTEGER NOT NULL,
+  http BIGINT NOT NULL DEFAULT 0,
+  tls BIGINT NOT NULL DEFAULT 0,
+  socks BIGINT NOT NULL DEFAULT 0,
+  created_time BIGINT NOT NULL,
+  updated_time BIGINT,
+  status BIGINT NOT NULL,
   tcp_listen_addr VARCHAR(100) NOT NULL DEFAULT '[::]',
   udp_listen_addr VARCHAR(100) NOT NULL DEFAULT '[::]'
 );
 
 CREATE TABLE IF NOT EXISTS speed_limit (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
-  speed INTEGER NOT NULL,
-  tunnel_id INTEGER NOT NULL,
+  speed BIGINT NOT NULL,
+  tunnel_id BIGINT NOT NULL,
   tunnel_name VARCHAR(100) NOT NULL,
-  created_time INTEGER NOT NULL,
-  updated_time INTEGER,
-  status INTEGER NOT NULL
+  created_time BIGINT NOT NULL,
+  updated_time BIGINT,
+  status BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS statistics_flow (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  flow INTEGER NOT NULL,
-  total_flow INTEGER NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  flow BIGINT NOT NULL,
+  total_flow BIGINT NOT NULL,
   time VARCHAR(100) NOT NULL,
-  created_time INTEGER NOT NULL
+  created_time BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tunnel (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
-  traffic_ratio REAL NOT NULL DEFAULT 1.0,
-  type INTEGER NOT NULL,
+  traffic_ratio DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+  type BIGINT NOT NULL,
   protocol VARCHAR(10) NOT NULL DEFAULT 'tls',
-  flow INTEGER NOT NULL,
-  created_time INTEGER NOT NULL,
-  updated_time INTEGER NOT NULL,
-  status INTEGER NOT NULL,
+  flow BIGINT NOT NULL,
+  created_time BIGINT NOT NULL,
+  updated_time BIGINT NOT NULL,
+  status BIGINT NOT NULL,
   in_ip TEXT
 );
 
 CREATE TABLE IF NOT EXISTS chain_tunnel (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tunnel_id INTEGER NOT NULL ,
+    id BIGSERIAL PRIMARY KEY,
+    tunnel_id BIGINT NOT NULL ,
     chain_type VARCHAR(10) NOT NULL,
-    node_id INTEGER NOT NULL ,
-    port INTEGER,
+    node_id BIGINT NOT NULL ,
+    port BIGINT,
     strategy VARCHAR(10),
-    inx  INTEGER,
+    inx  BIGINT,
     protocol  VARCHAR(10)
 );
 
 
-CREATE TABLE IF NOT EXISTS user (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user VARCHAR(100) NOT NULL,
+CREATE TABLE IF NOT EXISTS "user" (
+  id BIGSERIAL PRIMARY KEY,
+  "user" VARCHAR(100) NOT NULL,
   pwd VARCHAR(100) NOT NULL,
-  role_id INTEGER NOT NULL,
-  exp_time INTEGER NOT NULL,
-  flow INTEGER NOT NULL,
-  in_flow INTEGER NOT NULL DEFAULT 0,
-  out_flow INTEGER NOT NULL DEFAULT 0,
-  flow_reset_time INTEGER NOT NULL,
-  num INTEGER NOT NULL,
-  created_time INTEGER NOT NULL,
-  updated_time INTEGER,
-  status INTEGER NOT NULL
+  role_id BIGINT NOT NULL,
+  exp_time BIGINT NOT NULL,
+  flow BIGINT NOT NULL,
+  in_flow BIGINT NOT NULL DEFAULT 0,
+  out_flow BIGINT NOT NULL DEFAULT 0,
+  flow_reset_time BIGINT NOT NULL,
+  num BIGINT NOT NULL,
+  created_time BIGINT NOT NULL,
+  updated_time BIGINT,
+  status BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_tunnel (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  tunnel_id INTEGER NOT NULL,
-  speed_id INTEGER,
-  num INTEGER NOT NULL,
-  flow INTEGER NOT NULL,
-  in_flow INTEGER NOT NULL DEFAULT 0,
-  out_flow INTEGER NOT NULL DEFAULT 0,
-  flow_reset_time INTEGER NOT NULL,
-  exp_time INTEGER NOT NULL,
-  status INTEGER NOT NULL
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  tunnel_id BIGINT NOT NULL,
+  speed_id BIGINT,
+  num BIGINT NOT NULL,
+  flow BIGINT NOT NULL,
+  in_flow BIGINT NOT NULL DEFAULT 0,
+  out_flow BIGINT NOT NULL DEFAULT 0,
+  flow_reset_time BIGINT NOT NULL,
+  exp_time BIGINT NOT NULL,
+  status BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS vite_config (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(200) NOT NULL UNIQUE,
   value VARCHAR(200) NOT NULL,
-  time INTEGER NOT NULL
+  time BIGINT NOT NULL
 );
 

@@ -79,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (!valid)  return R.err("验证码校验失败");
         }
 
-        User user = this.getOne(new QueryWrapper<User>().eq("user", loginDto.getUsername()));
+        User user = this.getOne(new QueryWrapper<User>().eq("\"user\"", loginDto.getUsername()));
         if (user == null) return R.err("账号或密码错误");
         if (!user.getPwd().equals(Md5Util.md5(loginDto.getPassword())))  return R.err("账号或密码错误");
         if (user.getStatus() == 0)  return R.err("账号被停用");
@@ -104,7 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 用户名查重
-        int count = this.count(new QueryWrapper<User>().eq("user", registerDto.getUser()));
+        int count = this.count(new QueryWrapper<User>().eq("\"user\"", registerDto.getUser()));
         if (count > 0) return R.err("用户名已存在");
 
         // 3. 读取默认配额（vite_config 可配置，未配置用代码默认值）
@@ -159,7 +159,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public R createUser(UserDto userDto) {
-        int count = this.count(new QueryWrapper<User>().eq("user", userDto.getUser()));
+        int count = this.count(new QueryWrapper<User>().eq("\"user\"", userDto.getUser()));
         if (count > 0) return R.err("用户名已存在");
         User user = new User();
         BeanUtils.copyProperties(userDto, user);
@@ -185,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) return R.err("用户不存在");
         if (user.getRoleId() == 0) return R.err("请不要作死");
 
-        int count = this.count(new QueryWrapper<User>().eq("user", userUpdateDto.getUser()).ne("id", userUpdateDto.getId()));
+        int count = this.count(new QueryWrapper<User>().eq("\"user\"", userUpdateDto.getUser()).ne("id", userUpdateDto.getId()));
         if (count > 0) return R.err("用户名已存在");
 
 
@@ -249,7 +249,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         if (!user.getUser().equals(changePasswordDto.getNewUsername())) {
             user.setPwd(Md5Util.md5(changePasswordDto.getNewPassword()));
-            int count = this.count(new QueryWrapper<User>().eq("user", changePasswordDto.getNewUsername()).ne("id", user.getId()));
+            int count = this.count(new QueryWrapper<User>().eq("\"user\"", changePasswordDto.getNewUsername()).ne("id", user.getId()));
             if (count > 0) return R.err("用户名已存在");
         }
         User updateUser = new User();

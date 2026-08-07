@@ -2,7 +2,7 @@
 # ============================================================
 # flux-panel (哆啦A梦面板) 2.0.7-beta 一键 systemd 安装脚本
 # 适用：Debian 12 / Ubuntu 22.04+ (x86_64 / arm64)
-# 组件：Spring Boot 后端(java -jar + SQLite) + 前端静态文件
+# 组件：Spring Boot 后端(java -jar + PostgreSQL) + 前端静态文件
 # Web 服务器（nginx/caddy 等）不在此脚本范围内，由用户自行配置
 # 无需 MariaDB/MySQL —— beta 版后端内置 SQLite，启动自动建表
 # 二开说明：仅修改 vite-frontend/nginx.conf 的反代地址
@@ -18,7 +18,11 @@ DEPLOY_DIR="${INSTALL_DIR}/deploy"                     # 部署目录(jar/日志
 WWW_DIR="${WWW_DIR:-/var/www/flux}"                    # 前端静态文件
 FRONTEND_PORT="${FRONTEND_PORT:-6366}"
 BACKEND_PORT="${BACKEND_PORT:-6365}"
-DB_PATH="${DB_PATH:-${DEPLOY_DIR}/data/gost.db}"       # SQLite 数据库文件
+DB_HOST="${DB_HOST:-127.0.0.1}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-flux_panel}"
+DB_USER="${DB_USER:-fluxuser}"
+DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -hex 12)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 16)}"
 JAVA_HOME_DIR="${JAVA_HOME_DIR:-/opt/jdk-21}"
 NODE_HOME_DIR="${NODE_HOME_DIR:-/opt/node20}"
@@ -37,9 +41,9 @@ echo "==> [1/5] 安装系统依赖 (maven ...)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 if [ "$WITH_NGINX" = "1" ]; then
-  apt-get install -y -qq git curl wget unzip maven nginx openssl
+  apt-get install -y -qq git curl wget unzip maven nginx openssl postgresql
 else
-  apt-get install -y -qq git curl wget unzip maven openssl
+  apt-get install -y -qq git curl wget unzip maven openssl postgresql
 fi
 
 # ---------- 2. JDK 21 (Debian 12 源无 JDK21，用 Adoptium) ----------
@@ -77,7 +81,15 @@ ok "后端 jar: $(ls -lh "$INSTALL_DIR/springboot-backend/target/"*.jar | awk '{
 
 # ---------- 5. 部署 + systemd ----------
 echo "==> [5/5] 部署文件与 systemd 服务"
-mkdir -p "$(dirname "$DB_PATH")" "$DEPLOY_DIR/logs" "$WWW_DIR"
+mkdir -p "$DEPLOY_DIR/logs" "$WWW_DIR"
+
+# 初始化 PostgreSQL（启动 + 建库建用户）
+systemctl enable --now postgresql >/dev/null 2>&1 || systemctl start postgresql
+for i in $(seq 1 30); do pg_isready -q -h "$DB_HOST" -p "$DB_PORT" && break; sleep 1; done
+echo "CREATE USER \"$DB_USER\" WITH PASSWORD '$DB_PASSWORD';" | su - postgres -c psql 2>/dev/null
+echo "ALTER USER \"$DB_USER\" WITH PASSWORD '$DB_PASSWORD';" | su - postgres -c psql 2>/dev/null
+echo "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" | su - postgres -c psql 2>/dev/null || true
+echo "[提示] PostgreSQL 就绪: $DB_HOST:$DB_PORT/$DB_NAME (用户 $DB_USER)"
 systemctl stop flux-backend 2>/dev/null || true
 cp "$INSTALL_DIR/springboot-backend/target/"*.jar "$DEPLOY_DIR/admin.jar.new"
 mv "$DEPLOY_DIR/admin.jar.new" "$DEPLOY_DIR/admin.jar"   # 原子替换，避免读到半截 jar
@@ -169,7 +181,11 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$DEPLOY_DIR
-Environment=DB_PATH=$DB_PATH
+Environment=DB_HOST=$DB_HOST
+Environment=DB_PORT=$DB_PORT
+Environment=DB_NAME=$DB_NAME
+Environment=DB_USER=$DB_USER
+Environment=DB_PASSWORD=$DB_PASSWORD
 Environment=JWT_SECRET=$JWT_SECRET
 Environment=LOG_DIR=$DEPLOY_DIR/logs
 Environment=JAVA_OPTS=-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai
@@ -199,6 +215,6 @@ if [ "$WITH_NGINX" = "1" ]; then
 else
   echo " 服务: flux-backend（未安装 Web 服务器，请自行配置，模板: $DEPLOY_DIR/nginx-flux.conf.example）"
 fi
-echo " 数据库: SQLite ($DB_PATH) 启动自动建表"
+echo " 数据库: PostgreSQL $DB_HOST:$DB_PORT/$DB_NAME (用户 $DB_USER)"
 echo " 文档: https://tes.cc/guide.html"
 echo "=============================================="
