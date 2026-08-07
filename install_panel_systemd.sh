@@ -141,19 +141,19 @@ server {
     server_name _;
     root $WWW_DIR;
     index index.html;
-    location / { try_files $uri $uri/ /index.html; }
+    location / { try_files \$uri \$uri/ /index.html; }
     location ^~ /api/v1/ {
-        proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_pass http://127.0.0.1:$BACKEND_PORT/api/v1/;
     }
-    location /flow/upload { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/upload; proxy_set_header Host $host; }
-    location /flow/config { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/config; proxy_set_header Host $host; }
+    location /flow/upload { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/upload; proxy_set_header Host \$host; }
+    location /flow/config { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/config; proxy_set_header Host \$host; }
     location /system-info {
         proxy_pass http://127.0.0.1:$BACKEND_PORT/system-info;
-        proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1; proxy_set_header Upgrade \$http_upgrade; proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 NGINX
