@@ -79,7 +79,9 @@ ok "后端 jar: $(ls -lh "$INSTALL_DIR/springboot-backend/target/"*.jar | awk '{
 echo "==> [5/5] 部署文件与 systemd 服务"
 mkdir -p "$(dirname "$DB_PATH")" "$DEPLOY_DIR/logs" "$WWW_DIR"
 systemctl stop flux-backend 2>/dev/null || true
-cp "$INSTALL_DIR/springboot-backend/target/"*.jar "$DEPLOY_DIR/admin.jar"
+cp "$INSTALL_DIR/springboot-backend/target/"*.jar "$DEPLOY_DIR/admin.jar.new"
+mv "$DEPLOY_DIR/admin.jar.new" "$DEPLOY_DIR/admin.jar"   # 原子替换，避免读到半截 jar
+rm -rf "$WWW_DIR"/*                                  # 清空旧静态文件（防旧 bundle 残留）
 cp -r "$INSTALL_DIR/vite-frontend/dist/"* "$WWW_DIR/"
 
 if [ "$WITH_NGINX" = "1" ]; then
