@@ -23,6 +23,7 @@ JAVA_HOME_DIR="${JAVA_HOME_DIR:-/opt/jdk-21}"
 NODE_HOME_DIR="${NODE_HOME_DIR:-/opt/node20}"
 NODE_VERSION="${NODE_VERSION:-v20.19.0}"
 JDK_VERSION="${JDK_VERSION:-21.0.6}"
+WITH_NGINX="${WITH_NGINX:-1}"                     # 1=自动安装并配置 nginx（默认）；0=跳过，由用户自行配置 Web 服务器
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -34,7 +35,11 @@ err() { echo -e "${RED}[FAIL] $1${NC}"; exit 1; }
 echo "==> [1/5] 安装系统依赖 (maven / nginx ...)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq git curl wget unzip maven nginx openssl
+if [ "$WITH_NGINX" = "1" ]; then
+  apt-get install -y -qq git curl wget unzip maven nginx openssl
+else
+  apt-get install -y -qq git curl wget unzip maven openssl
+fi
 
 # ---------- 2. JDK 21 (Debian 12 源无 JDK21，用 Adoptium) ----------
 echo "==> [2/5] 安装 JDK $JDK_VERSION"
@@ -76,8 +81,9 @@ systemctl stop flux-backend 2>/dev/null || true
 cp "$INSTALL_DIR/springboot-backend/target/"*.jar "$DEPLOY_DIR/admin.jar"
 cp -r "$INSTALL_DIR/vite-frontend/dist/"* "$WWW_DIR/"
 
-# nginx 站点配置（反代 127.0.0.1:BACKEND_PORT）
-cat > /etc/nginx/conf.d/flux.conf <<NGINX
+if [ "$WITH_NGINX" = "1" ]; then
+  # nginx 站点配置（反代 127.0.0.1:BACKEND_PORT）
+  cat > /etc/nginx/conf.d/flux.conf <<NGINX
 server {
     listen $FRONTEND_PORT;
     server_name _;
@@ -121,7 +127,35 @@ server {
     }
 }
 NGINX
-nginx -t >/dev/null && systemctl reload nginx
+  nginx -t >/dev/null && systemctl reload nginx
+else
+  # 用户自配模式：不安装/配置 nginx，仅生成配置模板供参考
+  echo "[提示] 已跳过 nginx 安装与配置 (WITH_NGINX=0)"
+  echo "[提示] 前端静态文件目录: $WWW_DIR"
+  cat > "$DEPLOY_DIR/nginx-flux.conf.example" <<NGINX
+server {
+    listen $FRONTEND_PORT;
+    server_name _;
+    root $WWW_DIR;
+    index index.html;
+    location / { try_files $uri $uri/ /index.html; }
+    location ^~ /api/v1/ {
+        proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:$BACKEND_PORT/api/v1/;
+    }
+    location /flow/upload { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/upload; proxy_set_header Host $host; }
+    location /flow/config { proxy_pass http://127.0.0.1:$BACKEND_PORT/flow/config; proxy_set_header Host $host; }
+    location /system-info {
+        proxy_pass http://127.0.0.1:$BACKEND_PORT/system-info;
+        proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+NGINX
+  echo "[提示] 配置模板: $DEPLOY_DIR/nginx-flux.conf.example（改好反代目标后放入你的 Web 服务器配置目录）"
+fi
 
 # 后端 systemd 服务
 cat > /etc/systemd/system/flux-backend.service <<SVC
@@ -157,7 +191,11 @@ echo "----------------------------------------------"
 echo " 访问: http://服务器IP:$FRONTEND_PORT"
 echo " 账号: admin_user / admin_user (登录后请修改)"
 echo " 源码: $INSTALL_DIR  部署: $DEPLOY_DIR"
-echo " 服务: flux-backend / nginx"
+if [ "$WITH_NGINX" = "1" ]; then
+  echo " 服务: flux-backend / nginx"
+else
+  echo " 服务: flux-backend（nginx 未安装，Web 服务器由你自行配置）"
+fi
 echo " 数据库: SQLite ($DB_PATH) 启动自动建表"
 echo " 文档: https://tes.cc/guide.html"
 echo "=============================================="
