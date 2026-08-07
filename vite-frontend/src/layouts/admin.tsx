@@ -266,7 +266,7 @@ export default function AdminLayout({
         ${isMobile ? 'fixed' : 'relative'} 
         ${isMobile && !mobileMenuVisible ? '-translate-x-full' : 'translate-x-0'}
         ${isMobile ? 'w-64' : 'w-72'} 
-        bg-white dark:bg-black 
+        bg-white/85 dark:bg-black/80 backdrop-blur-md 
         shadow-lg 
         border-r border-gray-200 dark:border-gray-600
         z-50 
@@ -316,7 +316,7 @@ export default function AdminLayout({
       {/* 主内容区域 */}
       <div className={`flex flex-col flex-1 ${isMobile ? 'min-h-0' : 'h-full overflow-hidden'}`}>
                  {/* 顶部导航栏 */}
-         <header className="bg-white dark:bg-black shadow-md border-b border-gray-200 dark:border-gray-600 h-14 flex items-center justify-between px-4 lg:px-6 relative z-10">
+         <header className="bg-white/80 dark:bg-black/70 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-600 h-14 flex items-center justify-between px-4 lg:px-6 relative z-10">
           <div className="flex items-center gap-4">
             {/* 移动端菜单按钮 */}
             {isMobile && (
@@ -375,7 +375,7 @@ export default function AdminLayout({
         </header>
 
         {/* 主内容 */}
-        <main className={`flex-1 bg-gray-100 dark:bg-black ${isMobile ? '' : 'overflow-y-auto'}`}>
+        <main className={`flex-1 bg-transparent ${isMobile ? '' : 'overflow-y-auto'}`}>
           {children}
         </main>
       </div>

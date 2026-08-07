@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { Logo } from '@/components/icons';
+import bgImage from "@/images/bg.jpg";
 import { siteConfig } from '@/config/site';
 
 interface TabItem {
@@ -110,9 +111,13 @@ export default function H5Layout({
   }, [location.pathname]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-black">
+    <div
+      className="relative flex flex-col min-h-screen bg-gray-100 dark:bg-black"
+      style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}
+    >
+      <div className="absolute inset-0 bg-white/70 dark:bg-black/60" />
       {/* 顶部导航栏 */}
-      <header className="bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-600 h-14 safe-top flex-shrink-0 flex items-center justify-between px-4 relative z-10">
+      <header className="bg-white/80 dark:bg-black/70 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-600 h-14 safe-top flex-shrink-0 flex items-center justify-between px-4 relative z-10">
         <div className="flex items-center gap-2">
           <Logo size={20} />
           <h1 className="text-sm font-bold text-foreground">{siteConfig.name}</h1>
@@ -123,7 +128,7 @@ export default function H5Layout({
       </header>
 
       {/* 主内容区域 */}
-      <main className="flex-1 bg-gray-100 dark:bg-black">
+      <main className="relative flex-1 bg-transparent">
         {children}
       </main>
 
@@ -131,7 +136,7 @@ export default function H5Layout({
       <div aria-hidden className="h-16 safe-bottom" />
 
       {/* 底部Tabbar */}
-      <nav className="bg-white dark:bg-black border-t border-gray-200 dark:border-gray-600 h-16 safe-bottom flex-shrink-0 flex items-center justify-around px-2 fixed bottom-0 left-0 right-0 z-30">
+      <nav className="bg-white/80 dark:bg-black/70 backdrop-blur-md border-t border-gray-200 dark:border-gray-600 h-16 safe-bottom flex-shrink-0 flex items-center justify-around px-2 fixed bottom-0 left-0 right-0 z-30">
         {filteredTabItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (

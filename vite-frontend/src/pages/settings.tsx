@@ -12,6 +12,7 @@ import {
   deletePanelAddress, 
   validatePanelAddress,
 } from '@/utils/panel';
+import bgImage from "@/images/bg.jpg";
 
 interface PanelAddress {
   name: string;
@@ -77,9 +78,13 @@ export const SettingsPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
+    <div
+      className="relative min-h-screen bg-gray-50 dark:bg-black"
+      style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}
+    >
+      <div className="absolute inset-0 bg-white/70 dark:bg-black/60" />
       {/* 顶部导航 */}
-      <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700">
+      <div className="relative bg-white/80 dark:bg-black/70 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <Button

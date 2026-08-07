@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@heroui/button";
 
 import { Logo } from '@/components/icons';
+import bgImage from "@/images/bg.jpg";
 import { siteConfig } from '@/config/site';
 
 export default function H5SimpleLayout({
@@ -29,9 +30,13 @@ export default function H5SimpleLayout({
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-black">
+    <div
+      className="relative flex flex-col min-h-screen bg-gray-100 dark:bg-black"
+      style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}
+    >
+      <div className="absolute inset-0 bg-white/70 dark:bg-black/60" />
       {/* 顶部导航栏 */}
-      <header className="bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-600 h-14 safe-top flex-shrink-0 flex items-center justify-between px-4 relative z-10">
+      <header className="bg-white/80 dark:bg-black/70 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-600 h-14 safe-top flex-shrink-0 flex items-center justify-between px-4 relative z-10">
         <div className="flex items-center gap-2">
           <Button
             isIconOnly
@@ -52,7 +57,7 @@ export default function H5SimpleLayout({
       </header>
 
       {/* 主内容区域 */}
-      <main className="flex-1 bg-gray-100 dark:bg-black pb-0">
+      <main className="relative flex-1 bg-transparent pb-0">
         {children}
       </main>
     </div>
