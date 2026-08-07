@@ -258,3 +258,5 @@ doraemon.jks
 device.id
 commit.sh
 sql/
+# 部署产物（jar/数据库/日志）
+deploy/
