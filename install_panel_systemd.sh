@@ -226,8 +226,10 @@ if [ "$WITH_NODE" = "1" ]; then
   if [ ! -x "$GO_HOME_DIR/bin/go" ]; then
     ARCH=$(uname -m | sed "s/x86_64/amd64/; s/aarch64/arm64/")
     curl -sL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz"
-    tar xzf /tmp/go.tar.gz -C /opt
-    mv /opt/go "$GO_HOME_DIR"
+    tar xzf /tmp/go.tar.gz -C /tmp
+    # GO_HOME_DIR 可能与解压目录同名（如 /opt/go），先清理残留再移动
+    rm -rf "$GO_HOME_DIR" 2>/dev/null || true
+    mv /tmp/go "$GO_HOME_DIR"
     rm -f /tmp/go.tar.gz
   fi
   export PATH="$GO_HOME_DIR/bin:$PATH"
