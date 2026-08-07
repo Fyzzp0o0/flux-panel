@@ -168,7 +168,7 @@ public class ForwardServiceImpl extends ServiceImpl<ForwardMapper, Forward> impl
         forward.setCreatedTime(System.currentTimeMillis());
         forward.setUpdatedTime(System.currentTimeMillis());
         List<JSONObject> success = new ArrayList<>();
-        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", 1));
+        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", "1"));
         chainTunnels = get_port(chainTunnels, forwardDto.getInPort(), 0L);
         this.save(forward);
 
@@ -250,7 +250,7 @@ public class ForwardServiceImpl extends ServiceImpl<ForwardMapper, Forward> impl
         this.updateById(existForward);
 
 
-        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", 1));
+        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", "1"));
 
         // 自己占用的应该不算
         chainTunnels = get_port(chainTunnels, forwardUpdateDto.getInPort(), existForward.getId());
@@ -312,7 +312,7 @@ public class ForwardServiceImpl extends ServiceImpl<ForwardMapper, Forward> impl
             userTunnel = getUserTunnel(forward.getUserId(), tunnel.getId().intValue());
         }
 
-        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", 1));
+        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", "1"));
         for (ChainTunnel chainTunnel : chainTunnels) {
 
             String serviceName = buildServiceName(forward.getId(), forward.getUserId(), userTunnel);
@@ -636,7 +636,7 @@ public class ForwardServiceImpl extends ServiceImpl<ForwardMapper, Forward> impl
             userTunnel = getUserTunnel(forward.getUserId(), tunnel.getId().intValue());
         }
 
-        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", 1));
+        List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", "1"));
 
         for (ChainTunnel chainTunnel : chainTunnels) {
             String serviceName = buildServiceName(forward.getId(), forward.getUserId(), userTunnel);

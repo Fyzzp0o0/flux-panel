@@ -331,7 +331,7 @@ public class TunnelServiceImpl extends ServiceImpl<TunnelMapper, Tunnel> impleme
 
         if (StringUtils.isEmpty(tunnel.getInIp())){
             StringBuilder in_ip = new StringBuilder();
-            List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", 1));
+            List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", tunnel.getId()).eq("chain_type", "1"));
             for (ChainTunnel chainTunnel : chainTunnels) {
                 Node node = nodeService.getById(chainTunnel.getNodeId());
                 if (node == null)return R.err("隧道节点数据错误，部分节点不存在");

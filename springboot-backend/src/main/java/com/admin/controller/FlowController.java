@@ -313,7 +313,7 @@ public class FlowController extends BaseController {
 
     public void pauseService(List<Forward> forwardList, String name) {
         for (Forward forward : forwardList) {
-            List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", forward.getTunnelId()).eq("chain_type", 1));
+            List<ChainTunnel> chainTunnels = chainTunnelService.list(new QueryWrapper<ChainTunnel>().eq("tunnel_id", forward.getTunnelId()).eq("chain_type", "1"));
             for (ChainTunnel chainTunnel : chainTunnels) {
                 GostUtil.PauseAndResumeService(chainTunnel.getNodeId(), name, "PauseService");
             }
