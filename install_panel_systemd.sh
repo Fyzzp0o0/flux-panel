@@ -2,7 +2,8 @@
 # ============================================================
 # flux-panel (哆啦A梦面板) 2.0.7-beta 一键 systemd 安装脚本
 # 适用：Debian 12 / Ubuntu 22.04+ (x86_64 / arm64)
-# 组件：Spring Boot 后端(java -jar + SQLite) + nginx 前端
+# 组件：Spring Boot 后端(java -jar + SQLite) + 前端静态文件
+# Web 服务器（nginx/caddy 等）不在此脚本范围内，由用户自行配置
 # 无需 MariaDB/MySQL —— beta 版后端内置 SQLite，启动自动建表
 # 二开说明：仅修改 vite-frontend/nginx.conf 的反代地址
 #          (backend:6365 -> 127.0.0.1:6365)，其余为原版代码
@@ -23,7 +24,7 @@ JAVA_HOME_DIR="${JAVA_HOME_DIR:-/opt/jdk-21}"
 NODE_HOME_DIR="${NODE_HOME_DIR:-/opt/node20}"
 NODE_VERSION="${NODE_VERSION:-v20.19.0}"
 JDK_VERSION="${JDK_VERSION:-21.0.6}"
-WITH_NGINX="${WITH_NGINX:-1}"                     # 1=自动安装并配置 nginx（默认）；0=跳过，由用户自行配置 Web 服务器
+WITH_NGINX="${WITH_NGINX:-0}"                     # 默认不安装任何 Web 服务器；设 1 可让脚本代装并配置 nginx
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -32,7 +33,7 @@ ok()  { echo -e "${GREEN}[OK] $1${NC}"; }
 err() { echo -e "${RED}[FAIL] $1${NC}"; exit 1; }
 
 # ---------- 1. 系统依赖 ----------
-echo "==> [1/5] 安装系统依赖 (maven / nginx ...)"
+echo "==> [1/5] 安装系统依赖 (maven ...)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 if [ "$WITH_NGINX" = "1" ]; then
@@ -192,9 +193,9 @@ echo " 访问: http://服务器IP:$FRONTEND_PORT"
 echo " 账号: admin_user / admin_user (登录后请修改)"
 echo " 源码: $INSTALL_DIR  部署: $DEPLOY_DIR"
 if [ "$WITH_NGINX" = "1" ]; then
-  echo " 服务: flux-backend / nginx"
+  echo " 服务: flux-backend / nginx (WITH_NGINX=1)"
 else
-  echo " 服务: flux-backend（nginx 未安装，Web 服务器由你自行配置）"
+  echo " 服务: flux-backend（未安装 Web 服务器，请自行配置，模板: $DEPLOY_DIR/nginx-flux.conf.example）"
 fi
 echo " 数据库: SQLite ($DB_PATH) 启动自动建表"
 echo " 文档: https://tes.cc/guide.html"

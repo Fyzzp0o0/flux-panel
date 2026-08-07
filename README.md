@@ -34,7 +34,7 @@
 
 #### 快速部署
 
-面板端（自动安装 JDK21 / Node20 / Maven / nginx 并构建部署）：
+面板端（自动安装 JDK21 / Node20 / Maven 并构建部署；脚本不包含 Web 服务器，nginx/caddy 等由你自行配置，模板见 deploy/nginx-flux.conf.example）：
 
 ```bash
 curl -L https://raw.githubusercontent.com/<your-fork>/<branch>/install_panel_systemd.sh -o install_panel_systemd.sh && chmod +x install_panel_systemd.sh && ./install_panel_systemd.sh
